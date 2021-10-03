@@ -1,0 +1,77 @@
+package com.acko.ackoservice.filter;
+
+import com.acko.ackoservice.services.authentication.AuthenticationServiceImpl;
+import com.acko.ackoservice.util.JwtTokenUtil;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.SignatureException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@Component
+@Slf4j
+public class AuthTokenFilter extends OncePerRequestFilter {
+
+    private static final String HEADER_STRING = "Authorization";
+    private static final String TOKEN_PREFIX = "Bearer";
+
+   @Autowired
+    private AuthenticationServiceImpl authenticationService;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException {
+
+        /*log.error("################  Authtoken filter is called #####################");
+
+        String header = req.getHeader(HEADER_STRING);
+        String username = null;
+        String authToken = null;
+        if (header != null && header.startsWith(TOKEN_PREFIX)) {
+            authToken = header.replace(TOKEN_PREFIX, "");
+            try {
+                username = jwtTokenUtil.getUserName(authToken);
+            } catch (IllegalArgumentException e) {
+                logger.error("An error occurred while fetching Username from Token", e);
+            } catch (ExpiredJwtException e) {
+                logger.warn("The token has expired", e);
+            } catch (SignatureException e) {
+                logger.error("Authentication Failed. Username or Password not valid.");
+            }
+        } else {
+            logger.warn("Couldn't find bearer string, header will be ignored");
+        }*/
+
+
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UserDetails userDetails = authenticationService.loadUserByUsername("+919391488477");
+
+            /*if (jwtTokenUtil.validateToken(username, authToken))
+            {*/
+                UsernamePasswordAuthenticationToken authentication = null;
+                authentication = new UsernamePasswordAuthenticationToken(userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                logger.info("authenticated user " + userDetails.getUsername() + ", setting security context");
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+           // }
+        }
+
+        chain.doFilter(req, res);
+    }
+
+
+}
